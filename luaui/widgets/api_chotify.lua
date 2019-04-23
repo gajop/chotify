@@ -3,8 +3,7 @@ return {
     name      = "Chotify",
     desc      = "Chili notification library",
     author    = "gajop",
-    date      = "in the future",
-    license   = "GPL-v2",
+    license   = "MIT",
     layer     = -980,
     enabled   = true,
     api       = true,
@@ -24,7 +23,7 @@ function widget:Initialize()
         widgetHandler:RemoveWidget(widget)
         return
     end
-    if not WG.Chili then
+    if not WG.SBChili then
         Spring.Log("Chotify", LOG.ERROR, "Missing ChiliUI.")
         widgetHandler:RemoveWidget(widget)
         return
@@ -41,4 +40,8 @@ end
 
 function widget:Update()
     WG.Chotify:_Update()
+end
+
+function widget:ViewResize(vsx, vsy)
+    WG.Chotify:ViewResize(vsx, vsy)
 end
