@@ -1,4 +1,15 @@
-Chotify = LCS.class{}
+Chotify = LCS.class {
+    spawn = {
+        direction = "up",
+        rightRatio = 0.5,
+        bottomRatio = 0.0,
+        leftRatio = nil,
+        topRatio = 0.0,
+
+        widthRatio = 0.2,
+        heightRatio = 0.1,
+    }
+}
 
 local vsx, vsy
 
@@ -45,9 +56,6 @@ function Chotify:CloseNotification(id)
     self:_Realign(sorted)
 end
 
-local WINDOW_HEIGHT = 200
-local WINDOW_WIDTH = 400
-
 function Chotify:Post(obj)
     if not self.enabled then
         return
@@ -69,6 +77,19 @@ function Chotify:Post(obj)
     local id = self._idCounter
     self._idCounter = self._idCounter + 1
 
+    local direction = Chotify.spawn.direction
+    if direction == "up" then
+        if Chotify.spawn.bottomRatio == nil then
+            Spring.Log("Chotify", LOG.ERROR,  'Missing spawn.bottomRatio when direction=="top"')
+        end
+    elseif direction == "down" then
+        if Chotify.spawn.topRatio == nil then
+            Spring.Log("Chotify", LOG.ERROR,  'Missing spawn.topRatio when direction=="bottom"')
+        end
+    else
+        Spring.Log("Chotify", LOG.ERROR, "Invalid direction: " .. tostring(direction) .. '. Should be either "top" nor "bottom"')
+    end
+
     local sp = Chili.ScrollPanel:New {
         x = 5,
         right = 5,
@@ -80,10 +101,12 @@ function Chotify:Post(obj)
         resizeItems = false
     }
     local window = Chili.Window:New {
-        right = 500 + 400,
-        width = WINDOW_WIDTH,
-        bottom = 0,
-        height = WINDOW_HEIGHT,
+        width = Chotify.spawn.widthRatio * vsx,
+        height = Chotify.spawn.heightRatio * vsy,
+        x = Chotify.spawn.leftRatio and Chotify.spawn.leftRatio * vsx,
+        y = direction == "down" and Chotify.spawn.topRatio * vsy,
+        right = Chotify.spawn.rightRatio and Chotify.spawn.rightRatio * vsx,
+        bottom = direction == "up" and Chotify.spawn.bottomRatio * vsy,
         caption = title,
         parent = Chili.Screen0,
         draggable = false,
@@ -94,7 +117,8 @@ function Chotify:Post(obj)
     }
     if type(body) == "string" then
         Chili.TextBox:New {
-            x = 0, y = 0,
+            x = 0,
+            y = 5, -- Slight padding because text looks weird otherwise
             width = "100%",
             height = "100%",
             text = body,
@@ -118,6 +142,7 @@ function Chotify:Post(obj)
         endTime = startTime + time,
         id = id,
     }
+
     self.notifications[id] = notification
     self.totalNotifications = self.totalNotifications + 1
     -- pop oldest
@@ -161,8 +186,14 @@ function Chotify:_SortByStartTimeDesc()
 end
 
 function Chotify:_Realign(sorted)
-    for i, n in pairs(sorted) do
-        n.window:SetPos(nil, vsy - i * WINDOW_HEIGHT)
+    local direction = Chotify.spawn.direction
+    local windowHeight = Chotify.spawn.heightRatio * vsy
+    for i, notification in pairs(sorted) do
+        if direction == "up" then
+            notification.window:SetPos(nil, vsy * (1 - Chotify.spawn.bottomRatio) - i * windowHeight)
+        elseif direction == "down" then
+            notification.window:SetPos(nil, Chotify.spawn.topRatio + (i - 1) * windowHeight)
+        end
     end
 end
 
